@@ -1,0 +1,1 @@
+# playwright-pytest-nextjs-e2e-automation
