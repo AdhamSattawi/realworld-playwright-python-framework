@@ -1,0 +1,1 @@
+"""Navbar class to inject it in the base page (composition)"""
