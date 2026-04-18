@@ -14,7 +14,7 @@ class SettingsPage(BasePage):
         self.submit_btn = page.get_by_role("button", name="Update Settings")
 
     def load(self) -> None:
-        self.navigate("http://localhost:3000/settings")
+        self.navigate("/settings")
 
     def update_settings(self, 
                         profile_pic_url: str | None = None,

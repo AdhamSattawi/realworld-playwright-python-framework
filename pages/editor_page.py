@@ -11,7 +11,7 @@ class EditorPage(BasePage):
         self.description = page.get_by_placeholder("What's this article about?")
 
     def load(self) -> None:
-        self.navigate("http://localhost:3000/editor")
+        self.navigate("/editor")
 
     def new_post(self, title: str = "", 
                  description: str = "",
