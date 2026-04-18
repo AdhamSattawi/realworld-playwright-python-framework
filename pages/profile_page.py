@@ -7,8 +7,6 @@ class ProfilePage(BasePage):
         self.edit_profile_btn = page.get_by_role("button", name="Edit Profile Settings")
         self.my_articles = page.get_by_role("link", name="My Articles")
         self.fav_articles = page.get_by_role("link", name="Favorited Articles")
-        self.heart_btn = page.locator(".ion-heart")
-
 
     def load(self, username: str) -> None:
         self.navigate(f"/profile/@{username}")

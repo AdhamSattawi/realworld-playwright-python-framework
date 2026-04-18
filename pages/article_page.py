@@ -8,6 +8,8 @@ class ArticlePage(BasePage):
         self.delete_btn = page.get_by_role("button", name="Delete Article")
         self.comment_field = page.get_by_placeholder("Write a comment...")
         self.comment_btn = page.get_by_role("button", name="Post Comment")
+        self.heart_btn = page.locator(".ion-heart")
+
 
     def load(self, title: str) -> None:
         self.navigate(f"/article/{title}")
@@ -24,3 +26,6 @@ class ArticlePage(BasePage):
         """Post comment on the article"""
         self.comment_field.fill(comment)
         self.comment_btn.click()
+
+    def get_like_btn(self):
+        return self.heart_btn
