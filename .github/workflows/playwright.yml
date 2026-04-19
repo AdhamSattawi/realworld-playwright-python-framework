@@ -38,33 +38,15 @@ jobs:
           cd automation
           docker build -t automation-tests .
           
-          docker run --network next-realworld-prod_default --ipc=host --shm-size=1g \
+          docker run --rm --network next-realworld-prod_default --ipc=host --shm-size=1g \
             -e BASE_URL=http://realworld-prod:3000 \
             automation-tests \
-            bash -lc "python - <<'PY'
-import sys
-import time
-import requests
+            python scripts/wait_for_url.py --url http://realworld-prod:3000/login --timeout 120
 
-url = 'http://realworld-prod:3000/login'
-deadline = time.time() + 120
-last_error = None
-
-while time.time() < deadline:
-    try:
-        response = requests.get(url, timeout=5)
-        if response.status_code in (200, 302):
-            print(f'[CI] Target is reachable: {url} ({response.status_code})')
-            break
-    except Exception as error:
-        last_error = error
-    print('[CI] Waiting for app from test container network...')
-    time.sleep(3)
-else:
-    print(f'[CI] App not reachable from test container: {url}; last_error={last_error}')
-    sys.exit(1)
-PY
-pytest --base-url http://realworld-prod:3000"
+          docker run --rm --network next-realworld-prod_default --ipc=host --shm-size=1g \
+            -e BASE_URL=http://realworld-prod:3000 \
+            automation-tests \
+            pytest --base-url http://realworld-prod:3000
 
       - name: Upload Test Results
         if: always()
