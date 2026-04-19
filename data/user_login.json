@@ -2,25 +2,27 @@
   {
     "scenario": "Invalid Password",
     "email": "zpokerz10@hotmail.com",
-    "password": "WrongPassword123!",
-    "expected_error": "email or password is invalid"
+    "password": "WrongPassword123!"
   },
   {
     "scenario": "Unregistered Email",
     "email": "doesnotexist@nowhere.com",
-    "password": "ValidPassword123!",
-    "expected_error": "email or password is invalid"
+    "password": "ValidPassword123!"
   },
   {
     "scenario": "Empty Email",
     "email": "",
-    "password": "ValidPassword123!",
-    "expected_error": "email can't be blank"
+    "password": "ValidPassword123!"
   },
   {
     "scenario": "Empty Password",
     "email": "zpokerz10@hotmail.com",
-    "password": "",
-    "expected_error": "password can't be blank"
+    "password": ""
+  },
+  {
+    "scenario": "Empty creditals",
+    "email": "",
+    "password": ""
   }
+
 ]

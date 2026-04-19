@@ -1,5 +1,5 @@
 # RealWorld Conduit E2E Automation Framework
-
+# STATE: IN PROGRESS
 [![Playwright Tests](https://github.com/AdhamSattawi/realworld-playwright-python-framework/actions/workflows/playwright.yml/badge.svg)](https://github.com/AdhamSattawi/realworld-playwright-python-framework/actions)
 
 ## 📌 Overview
