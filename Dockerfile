@@ -1,10 +1,10 @@
-FROM mcr.microsoft.com/playwright:v1.59.1-noble
+FROM mcr.microsoft.com/playwright/python:v1.58.0-noble
 
 WORKDIR /automation
 
 COPY requirements.txt .
 
-RUN python3 -m pip install -r --no-cache-dir requirements.txt
+RUN pip install -r requirements.txt --no-cache-dir
 
 RUN playwright install chromium --with-deps
 
