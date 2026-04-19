@@ -11,39 +11,45 @@ PROJECT_ROOT = Path(__file__).parent
 #Implemented Playwright storageState because the project uses NextAuth
 # Ensure the .auth directory exists so we don't get a FileNotFoundError
 os.makedirs(str(PROJECT_ROOT / "playwright/.auth"), exist_ok=True)
-
 AUTH_FILE = "playwright/.auth/user.json"
 
-# 1. The Global Setup: Runs exactly ONCE per test run
 @pytest.fixture(scope="session", autouse=True)
 def setup_auth(browser: Browser, base_url: str) -> None:
-    """Logs in via UI, handles registration if needed, and saves cookies."""
+    """Logs in via UI and handles registration if the user doesn't exist."""
     context = browser.new_context(base_url=base_url)
     page = context.new_page()
 
+    print(f"\n[Setup] Attempting login at {base_url}/login")
     page.goto("/login")
     
-    # Note: I'm using the standard Conduit locators here
     page.get_by_placeholder("Email").fill("zpokerz10@hotmail.com")
     page.get_by_placeholder("Password").fill("zpokerz10")
     page.get_by_role("button", name="Sign in").click()
 
-    # The SDET Fallback: Did the login fail because the database was wiped?
-    if page.locator(".error-messages").is_visible():
-        print("\n[Setup] User not found. Registering a new account...")
-        page.goto("/register")
-        # Generate a unique username using the current timestamp
-        unique_user = f"testuser_{int(time.time())}"
+    try:
+        # Check if login worked
+        expect(page.locator(".navbar")).to_contain_text("zpokerz10", timeout=5000)
+        print("[Setup] Login successful.")
+    except AssertionError:
+        # If the navbar didn't show the user, check if it's because they don't exist
+        print("[Setup] Login failed or timed out. Checking for registration need...")
         
-        page.get_by_placeholder("Username").fill(unique_user)
-        page.get_by_placeholder("Email").fill("zpokerz10@hotmail.com")
-        page.get_by_placeholder("Password").fill("zpokerz10")
-        page.get_by_role("button", name="Sign up").click()
+        # We check for error messages. If they exist, we register.
+        if page.locator(".error-messages").count() > 0 or page.url.endswith("/login"):
+            print("[Setup] User not found. Registering a new account...")
+            page.goto("/register")
+            
+            # Use a timestamp to keep it unique, but consistent for this session
+            unique_user = f"user_{int(time.time())}"
+            page.get_by_placeholder("Username").fill(unique_user)
+            page.get_by_placeholder("Email").fill("zpokerz10@hotmail.com")
+            page.get_by_placeholder("Password").fill("zpokerz10")
+            page.get_by_role("button", name="Sign up").click()
+            
+            # Final verification that registration worked
+            expect(page.locator(".navbar")).to_be_visible(timeout=10000)
 
-    # Wait for the login/registration to actually finish (Profile link appears)
-    expect(page.locator(".navbar a[href^='/profile/']")).to_be_visible(timeout=10000)
-
-    # Save the NextAuth cookies to your JSON file!
+    # Save the state for all other tests
     context.storage_state(path=AUTH_FILE)
     context.close()
 
