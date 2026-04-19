@@ -4,7 +4,7 @@ WORKDIR /automation
 
 COPY requirements.txt .
 
-RUN pip install -r --no-cache-dir requirements.txt
+RUN python3 -m pip install -r --no-cache-dir requirements.txt
 
 RUN playwright install chromium --with-deps
 
