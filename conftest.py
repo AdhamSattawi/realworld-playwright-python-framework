@@ -2,7 +2,7 @@ import pytest
 import time
 import os
 from pathlib import Path
-from playwright.sync_api import Browser, BrowserContext, Page, expect, APIRequestContext, Playwright
+from playwright.sync_api import Browser, BrowserContext, Page, expect, APIRequestContext, Playwright, Route, Request
 from faker import Faker
 
 # Get the project root directory (where conftest.py is located)
@@ -12,6 +12,34 @@ PROJECT_ROOT = Path(__file__).parent
 # Ensure the .auth directory exists so we don't get a FileNotFoundError
 os.makedirs(str(PROJECT_ROOT / "playwright/.auth"), exist_ok=True)
 AUTH_FILE = "playwright/.auth/user.json"
+
+
+def _rewrite_localhost_request(route: Route, request: Request, base_url: str) -> None:
+    """Map localhost redirects to the configured test base URL in CI containers."""
+    target_base = base_url.rstrip("/")
+    request_url = request.url
+
+    for localhost_prefix in ("http://localhost:3000", "https://localhost:3000"):
+        if request_url.startswith(localhost_prefix):
+            route.continue_(url=f"{target_base}{request_url[len(localhost_prefix):]}")
+            return
+
+    route.continue_()
+
+
+@pytest.fixture(autouse=True)
+def route_localhost_to_base_url(page: Page, base_url: str):
+    """Prevent NextAuth callback redirects to localhost from breaking CI runs."""
+    if "localhost:3000" in base_url:
+        yield
+        return
+
+    handler = lambda route, request: _rewrite_localhost_request(route, request, base_url)
+    page.route("http://localhost:3000/**", handler)
+    page.route("https://localhost:3000/**", handler)
+    yield
+    page.unroute("http://localhost:3000/**", handler)
+    page.unroute("https://localhost:3000/**", handler)
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_auth(browser: Browser, base_url: str) -> None:
