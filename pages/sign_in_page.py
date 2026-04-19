@@ -11,7 +11,7 @@ class SignInPage(BasePage):
         self.submit_btn = page.get_by_test_id("btn-submit")
 
     def load(self) -> None:
-        self.navigate("http://localhost:3000/login")
+        self.navigate("/login")
 
     def goto_sign_up(self) -> None:
         """Go to new account registeration page"""
