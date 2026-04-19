@@ -32,7 +32,8 @@ jobs:
           
           docker run --network next-realworld-prod_default \
             -e BASE_URL=http://realworld-prod:3000 \
-            automation-tests
+            automation-tests \
+            pytest --base-url http://realworld-prod:3000
 
       - name: Upload Test Results
         if: always()
