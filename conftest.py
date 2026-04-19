@@ -1,10 +1,10 @@
 import pytest
 import time
 import os
-from playwright.sync_api import Browser, BrowserContext, Page, expect
+from playwright.sync_api import Browser, BrowserContext, Page, expect, APIRequestContext, Playwright
+from faker import Faker
 
 #Implemented Playwright storageState because the project uses NextAuth
-
 # Ensure the .auth directory exists so we don't get a FileNotFoundError
 os.makedirs("playwright/.auth", exist_ok=True)
 AUTH_FILE = "playwright/.auth/user.json"
@@ -61,3 +61,33 @@ def logged_in_page(logged_in_context: BrowserContext) -> Page:
     """Provides an authenticated page ready for testing."""
     page = logged_in_context.new_page()
     yield page
+
+
+
+@pytest.fixture
+def api_client(playwright: Playwright, base_url: str) -> APIRequestContext:
+    request_context = playwright.request.new_context(base_url=base_url)
+    yield request_context
+    request_context.dispose()
+
+FAKE = Faker()
+
+@pytest.fixture
+def create_test_user(api_client: APIRequestContext) -> dict:
+    """Create a new user before the test run"""
+
+    user_data = {
+        "user": {
+            "username": FAKE.user_name(),
+            "email": FAKE.email(),
+            "password": "ValidPassword123!"
+        }
+    }
+    response = api_client.post(
+        "/api/users",
+        data=user_data
+    )
+    if not response.ok:
+        print(f"DEBUG API ERROR: {response.text()}")
+    assert response.ok
+    yield user_data["user"]

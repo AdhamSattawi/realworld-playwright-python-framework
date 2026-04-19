@@ -8,7 +8,7 @@ class SignInPage(BasePage):
         self.register_link = page.get_by_role("link", name="Need an account?")
         self.email_input = page.get_by_test_id("input-email")
         self.pass_input = page.get_by_test_id("input-password")
-        self.submit_btn = page.get_by_test_id("submit-btn")
+        self.submit_btn = page.get_by_test_id("btn-submit")
 
     def load(self) -> None:
         self.navigate("http://localhost:3000/login")
