@@ -1,12 +1,17 @@
 import pytest
 import time
 import os
+from pathlib import Path
 from playwright.sync_api import Browser, BrowserContext, Page, expect, APIRequestContext, Playwright
 from faker import Faker
 
+# Get the project root directory (where conftest.py is located)
+PROJECT_ROOT = Path(__file__).parent
+
 #Implemented Playwright storageState because the project uses NextAuth
 # Ensure the .auth directory exists so we don't get a FileNotFoundError
-os.makedirs("playwright/.auth", exist_ok=True)
+os.makedirs(str(PROJECT_ROOT / "playwright/.auth"), exist_ok=True)
+
 AUTH_FILE = "playwright/.auth/user.json"
 
 # 1. The Global Setup: Runs exactly ONCE per test run
@@ -91,3 +96,4 @@ def create_test_user(api_client: APIRequestContext) -> dict:
         print(f"DEBUG API ERROR: {response.text()}")
     assert response.ok
     yield user_data["user"]
+
