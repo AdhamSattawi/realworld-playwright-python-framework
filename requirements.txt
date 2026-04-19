@@ -1,4 +1,6 @@
+pytest
 pytest-playwright 
 pytest-html
+pytest-base-url
 requests
 faker

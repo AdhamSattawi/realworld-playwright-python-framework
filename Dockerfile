@@ -10,4 +10,4 @@ RUN playwright install chromium --with-deps
 
 COPY . .
 
-CMD ["pytest", "--browser", "chromium", "--headless"]
+CMD ["pytest"]
