@@ -25,6 +25,14 @@ jobs:
           docker compose -f docker-compose.production.yml build
           docker compose -f docker-compose.production.yml up -d
 
+      - name: Wait for App to be Responsive
+        run: |
+          echo "Waiting for Next.js to start on port 3000..."
+          # This loop runs on the runner and checks 'localhost:3000' 
+          # until it gets a 200 OK or 302 Redirect.
+          timeout 60s sh -c 'until curl -sIL http://localhost:3000/login | grep "200\|302" > /dev/null; do echo "App is still booting..."; sleep 3; done'
+          echo "App is UP and READY!"
+
       - name: Run Automation Tests
         run: |
           cd automation
