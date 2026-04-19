@@ -38,14 +38,46 @@ jobs:
           cd automation
           docker build -t automation-tests .
           
-          docker run --network next-realworld-prod_default \
+          docker run --network next-realworld-prod_default --ipc=host --shm-size=1g \
             -e BASE_URL=http://realworld-prod:3000 \
             automation-tests \
-            pytest --base-url http://realworld-prod:3000
+            bash -lc "python - <<'PY'
+import sys
+import time
+import requests
+
+url = 'http://realworld-prod:3000/login'
+deadline = time.time() + 120
+last_error = None
+
+while time.time() < deadline:
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code in (200, 302):
+            print(f'[CI] Target is reachable: {url} ({response.status_code})')
+            break
+    except Exception as error:
+        last_error = error
+    print('[CI] Waiting for app from test container network...')
+    time.sleep(3)
+else:
+    print(f'[CI] App not reachable from test container: {url}; last_error={last_error}')
+    sys.exit(1)
+PY
+pytest --base-url http://realworld-prod:3000"
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
-          path: automation/test-results/
+          path: |
+            automation/reports/
+            automation/test-results/
+
+      - name: Dump App Logs On Failure
+        if: failure()
+        run: |
+          cd app
+          docker compose -f docker-compose.production.yml ps
+          docker compose -f docker-compose.production.yml logs --no-color --tail=300
