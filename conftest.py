@@ -44,41 +44,47 @@ def route_localhost_to_base_url(page: Page, base_url: str):
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_auth(browser: Browser, base_url: str) -> None:
-    """Logs in via UI and handles registration if the user doesn't exist."""
+    """Logs in via UI once per session and saves the NextAuth session state.
+
+    In CI the Docker DB is always empty, so the first attempt will fail and
+    we fall back to registering the account before saving state.
+    """
     context = browser.new_context(base_url=base_url)
     page = context.new_page()
 
     print(f"\n[Setup] Attempting login at {base_url}/login")
     page.goto("/login")
-    
-    page.get_by_placeholder("Email").fill("zpokerz10@hotmail.com")
-    page.get_by_placeholder("Password").fill("zpokerz10")
-    page.get_by_role("button", name="Sign in").click()
+    page.wait_for_load_state("networkidle")
 
-    try:
-        # Check if login worked
-        expect(page.locator(".navbar")).to_contain_text("zpokerz10", timeout=5000)
-        print("[Setup] Login successful.")
-    except AssertionError:
-        # If the navbar didn't show the user, check if it's because they don't exist
-        print("[Setup] Login failed or timed out. Checking for registration need...")
-        
-        # We check for error messages. If they exist, we register.
-        if page.locator(".error-messages").count() > 0 or page.url.endswith("/login"):
-            print("[Setup] User not found. Registering a new account...")
-            page.goto("/register")
-            
-            # Use a timestamp to keep it unique, but consistent for this session
-            unique_user = f"user_{int(time.time())}"
-            page.get_by_placeholder("Username").fill(unique_user)
-            page.get_by_placeholder("Email").fill("zpokerz10@hotmail.com")
-            page.get_by_placeholder("Password").fill("zpokerz10")
-            page.get_by_role("button", name="Sign up").click()
-            
-            # Final verification that registration worked
-            expect(page.locator(".navbar")).to_be_visible(timeout=10000)
+    # Use test-ids — same selectors as SignInPage
+    page.get_by_test_id("input-email").fill("zpokerz10@hotmail.com")
+    page.get_by_test_id("input-password").fill("zpokerz10")
+    page.get_by_test_id("btn-submit").click()
+    page.wait_for_load_state("networkidle")
 
-    # Save the state for all other tests
+    # Success = redirected away from /login
+    if "/login" in page.url:
+        print("[Setup] Login failed (user likely not in DB). Registering...")
+        page.goto("/register")
+        page.wait_for_load_state("networkidle")
+
+        unique_user = f"user_{int(time.time())}"
+        page.get_by_test_id("input-username").fill(unique_user)
+        page.get_by_test_id("input-email").fill("zpokerz10@hotmail.com")
+        page.get_by_test_id("input-password").fill("zpokerz10")
+        page.get_by_test_id("btn-submit").click()
+        page.wait_for_load_state("networkidle")
+
+        # Verify registration succeeded — should be redirected away from /register
+        if "/register" in page.url:
+            raise RuntimeError(
+                f"[Setup] Registration failed. Current URL: {page.url}"
+            )
+        print(f"[Setup] Registration successful. URL: {page.url}")
+    else:
+        print(f"[Setup] Login successful. URL: {page.url}")
+
+    # Save the NextAuth session state for all other tests
     context.storage_state(path=AUTH_FILE)
     context.close()
 

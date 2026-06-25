@@ -9,7 +9,7 @@ class SignUpPage(BasePage):
         self.username_input = page.get_by_test_id("input-username")
         self.email_input = page.get_by_test_id("input-email")
         self.pass_input = page.get_by_test_id("input-password")
-        self.submit_btn = page.get_by_test_id("submit-btn")
+        self.submit_btn = page.get_by_test_id("btn-submit")
 
     def load(self) -> None:
         self.navigate("/register")
