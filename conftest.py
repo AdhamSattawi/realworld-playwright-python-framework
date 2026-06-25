@@ -52,13 +52,21 @@ def setup_auth(browser: Browser, base_url: str) -> None:
     context = browser.new_context(base_url=base_url)
     page = context.new_page()
 
+    # Apply the same localhost rewrite that the autouse fixture applies to test
+    # pages — without this, NextAuth's post-auth callback redirect to
+    # localhost:3000 fails in CI (the app runs at realworld-prod:3000).
+    if "localhost:3000" not in base_url:
+        handler = lambda route, request: _rewrite_localhost_request(route, request, base_url)
+        page.route("http://localhost:3000/**", handler)
+        page.route("https://localhost:3000/**", handler)
+
     print(f"\n[Setup] Attempting login at {base_url}/login")
     page.goto("/login")
     page.wait_for_load_state("networkidle")
 
     # Use test-ids — same selectors as SignInPage
     page.get_by_test_id("input-email").fill("zpokerz10@hotmail.com")
-    page.get_by_test_id("input-password").fill("zpokerz10")
+    page.get_by_test_id("input-password").fill("ValidPassword123!")
     page.get_by_test_id("btn-submit").click()
     page.wait_for_load_state("networkidle")
 
@@ -71,7 +79,7 @@ def setup_auth(browser: Browser, base_url: str) -> None:
         unique_user = f"user_{int(time.time())}"
         page.get_by_test_id("input-username").fill(unique_user)
         page.get_by_test_id("input-email").fill("zpokerz10@hotmail.com")
-        page.get_by_test_id("input-password").fill("zpokerz10")
+        page.get_by_test_id("input-password").fill("ValidPassword123!")
         page.get_by_test_id("btn-submit").click()
         page.wait_for_load_state("networkidle")
 
