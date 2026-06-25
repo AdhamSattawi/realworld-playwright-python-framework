@@ -5,9 +5,9 @@ class ArticlePage(BasePage):
     def __init__(self, page: Page) -> None:
         super().__init__(page)
         # Edit Article is a <button> inside a <Link> — match by text
-        self.edit_btn = page.get_by_role("button", name="Edit Article")
+        self.edit_btn = page.get_by_role("button", name="Edit Article").first
         # Delete Article is a <button> with confirm dialog
-        self.delete_btn = page.get_by_role("button", name="Delete Article")
+        self.delete_btn = page.get_by_role("button", name="Delete Article").first
         self.comment_field = page.get_by_placeholder("Write a comment...")
         self.comment_btn = page.get_by_role("button", name="Post Comment")
         # Favorite button — the count lives in <span class="counter">

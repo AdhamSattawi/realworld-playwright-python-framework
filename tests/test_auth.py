@@ -21,16 +21,12 @@ LOGIN_SCENARIOS = load_user_data("data/user_login.json")
 
 @pytest.mark.parametrize("data", LOGIN_SCENARIOS, ids=lambda d: d["scenario"])
 def test_negative_logins(page: Page, data: dict):
-    """Negative login scenarios should redirect to the NextAuth error page."""
+    """Negative login scenarios should stay on /login with error query param."""
     sign_in_page = SignInPage(page)
     sign_in_page.load()
     sign_in_page.sign_in(data["email"], data["password"])
-    expect(page).to_have_url(re.compile(r"/login/error"))
-    expect(page.get_by_text("This page could not be found.")).to_be_visible()
-    home_btn = page.get_by_role("button", name="Return Home")
-    expect(home_btn).to_be_visible()
-    home_btn.click()
-    expect(page).to_have_url(re.compile(r"/"))
+    expect(page).to_have_url(re.compile(r"/login\?.*error=CredentialsSignin"))
+    expect(page.get_by_role("heading", name="Sign in")).to_be_visible()
 
 
 def test_sign_up_link_from_sign_in(page: Page):

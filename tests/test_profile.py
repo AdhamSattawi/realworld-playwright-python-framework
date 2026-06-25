@@ -1,26 +1,33 @@
 from playwright.sync_api import Page, expect
 from pages.profile_page import ProfilePage
 from pages.settings_page import SettingsPage
-
-
-def test_profile_page_loads(logged_in_page: Page, create_test_user: dict):
+def test_profile_page_loads(logged_in_page: Page):
     """Navigating to the user's own profile should display their username."""
+    logged_in_page.goto("/")
+    username_link = logged_in_page.locator(".navbar a[href*='/profile/@']").first
+    href = username_link.get_attribute("href")
+    username = href.split("@")[-1].rstrip("/")
+
     profile = ProfilePage(logged_in_page)
-    profile.load(create_test_user["username"])
+    profile.load(username)
 
     # The profile username heading should be visible
-    expect(logged_in_page.get_by_role("heading", name=create_test_user["username"])).to_be_visible()
+    expect(logged_in_page.get_by_role("heading", name=username)).to_be_visible()
 
 
-def test_edit_profile_button_navigates_to_settings(logged_in_page: Page, create_test_user: dict):
+def test_edit_profile_button_navigates_to_settings(logged_in_page: Page):
     """Clicking 'Edit Profile Settings' on the profile page navigates to /settings."""
+    logged_in_page.goto("/")
+    username_link = logged_in_page.locator(".navbar a[href*='/profile/@']").first
+    href = username_link.get_attribute("href")
+    username = href.split("@")[-1].rstrip("/")
+
     profile = ProfilePage(logged_in_page)
-    profile.load(create_test_user["username"])
+    profile.load(username)
     profile.edit()
 
     settings = SettingsPage(logged_in_page)
     expect(settings.header).to_be_visible()
-
 
 def test_my_articles_tab(logged_in_page: Page, create_article: dict):
     """The 'My Articles' tab on the auth user's profile should list their articles."""
