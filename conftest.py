@@ -86,10 +86,9 @@ def setup_auth(browser: Browser, playwright: Playwright, base_url: str) -> None:
     page.get_by_test_id("input-email").fill("zpokerz10@hotmail.com")
     page.get_by_test_id("input-password").fill("ValidPassword123!")
     page.get_by_test_id("btn-submit").click()
-    page.wait_for_load_state("networkidle")
-
-    # Success = redirected away from /login
-    if "/login" in page.url:
+    try:
+        page.wait_for_url(lambda url: "/login" not in url, timeout=10000)
+    except Exception:
         raise RuntimeError(f"[Setup] Login failed. Page URL remains: {page.url}")
 
     print(f"[Setup] Login successful. URL: {page.url}")
