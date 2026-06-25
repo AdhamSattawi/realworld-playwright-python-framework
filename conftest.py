@@ -43,12 +43,30 @@ def route_localhost_to_base_url(page: Page, base_url: str):
     page.unroute("https://localhost:3000/**", handler)
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_auth(browser: Browser, base_url: str) -> None:
+def setup_auth(browser: Browser, playwright: Playwright, base_url: str) -> None:
     """Logs in via UI once per session and saves the NextAuth session state.
 
-    In CI the Docker DB is always empty, so the first attempt will fail and
-    we fall back to registering the account before saving state.
+    Ensures the user exists by registering via API first, then logs in.
     """
+    # Ensure the user exists in the DB via API first
+    api_context = playwright.request.new_context(base_url=base_url)
+    user_data = {
+        "user": {
+            "username": "zpokerz10",
+            "email": "zpokerz10@hotmail.com",
+            "password": "ValidPassword123!"
+        }
+    }
+    print(f"\n[Setup] Ensuring test user exists via API at {base_url}/api/users")
+    resp = api_context.post("/api/users", data=user_data)
+    print(f"[Setup] API Registration response status: {resp.status}")
+    try:
+        print(f"[Setup] API Registration response: {resp.text()}")
+    except Exception:
+        pass
+    api_context.dispose()
+
+    # Log in via UI
     context = browser.new_context(base_url=base_url)
     page = context.new_page()
 
@@ -60,7 +78,7 @@ def setup_auth(browser: Browser, base_url: str) -> None:
         page.route("http://localhost:3000/**", handler)
         page.route("https://localhost:3000/**", handler)
 
-    print(f"\n[Setup] Attempting login at {base_url}/login")
+    print(f"[Setup] Attempting login at {base_url}/login")
     page.goto("/login")
     page.wait_for_load_state("networkidle")
 
@@ -72,25 +90,9 @@ def setup_auth(browser: Browser, base_url: str) -> None:
 
     # Success = redirected away from /login
     if "/login" in page.url:
-        print("[Setup] Login failed (user likely not in DB). Registering...")
-        page.goto("/register")
-        page.wait_for_load_state("networkidle")
+        raise RuntimeError(f"[Setup] Login failed. Page URL remains: {page.url}")
 
-        unique_user = f"user_{int(time.time())}"
-        page.get_by_test_id("input-username").fill(unique_user)
-        page.get_by_test_id("input-email").fill("zpokerz10@hotmail.com")
-        page.get_by_test_id("input-password").fill("ValidPassword123!")
-        page.get_by_test_id("btn-submit").click()
-        page.wait_for_load_state("networkidle")
-
-        # Verify registration succeeded — should be redirected away from /register
-        if "/register" in page.url:
-            raise RuntimeError(
-                f"[Setup] Registration failed. Current URL: {page.url}"
-            )
-        print(f"[Setup] Registration successful. URL: {page.url}")
-    else:
-        print(f"[Setup] Login successful. URL: {page.url}")
+    print(f"[Setup] Login successful. URL: {page.url}")
 
     # Save the NextAuth session state for all other tests
     context.storage_state(path=AUTH_FILE)

@@ -20,11 +20,11 @@ jobs:
           path: app
 
       - name: Start App Environment
-        env:
-          NEXTAUTH_URL: http://realworld-prod:3000
-          NEXT_PUBLIC_APP_URL: http://realworld-prod:3000
         run: |
           cd app
+          echo "" >> .env.docker
+          echo "NEXTAUTH_URL=http://realworld-prod:3000" >> .env.docker
+          echo "NEXT_PUBLIC_APP_URL=http://realworld-prod:3000" >> .env.docker
           docker compose -f docker-compose.production.yml build
           docker compose -f docker-compose.production.yml up -d
           docker compose -f docker-compose.production.yml exec -T realworld env | grep -E "NEXTAUTH_URL|NEXT_PUBLIC_APP_URL" || true
