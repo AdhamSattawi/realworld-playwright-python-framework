@@ -1,5 +1,4 @@
 # RealWorld Conduit E2E Automation Framework
-# STATE: IN PROGRESS
 [![Playwright Tests](https://github.com/AdhamSattawi/realworld-playwright-python-framework/actions/workflows/playwright.yml/badge.svg)](https://github.com/AdhamSattawi/realworld-playwright-python-framework/actions)
 
 ## 📌 Overview
@@ -17,6 +16,8 @@ This framework demonstrates scalable test architecture, utilizing the **Page Obj
 ## 🚀 Key Features
 * **Strict Separation of Concerns:** Complete decoupling of UI locators, test scripts, and business logic.
 * **Authentication Bypass (Fast Login):** Leverages Playwright's `storageState` and Pytest fixtures to handle NextAuth sessions natively. UI login is performed once per test suite, and the resulting session cookies are injected into all subsequent tests to drastically reduce execution time and flakiness.
+* **API-Backed Test Setup:** A dedicated `APIClient` utility class creates and tears down test data (users, articles) via the RealWorld REST API, keeping tests fast and fully independent of one another.
+* **Data-Driven Testing (DDT):** Negative scenarios for login and registration are driven from JSON payloads, making it trivial to add or update edge cases without touching test code.
 * **Environment Agnostic:** Configuration is managed via `pytest.ini`, allowing seamless execution against local, staging, or production environments without requiring code changes.
 * **Fully Containerized CI/CD:** The GitHub Actions pipeline automatically spins up the target Next.js + Postgres application via Docker Compose before executing the test suite against the ephemeral environment.
 * **Automated HTML Reporting:** Detailed HTML reports with trace viewers and failure screenshots are automatically uploaded as artifacts to every CI/CD run.
@@ -37,20 +38,34 @@ For code reviewers and hiring managers, you do not need to pull this repository 
 ## 📁 Project Structure
 ```text
 ├── .github/workflows/
-│   └── playwright.yml      # CI/CD pipeline definition (includes workflow_dispatch)
+│   └── playwright.yml          # CI/CD pipeline definition (includes workflow_dispatch)
 ├── components/
-│   └── navbar.py           # Shared UI components (Composition over Inheritance)
+│   └── navbar.py               # Shared UI components (Composition over Inheritance)
 ├── data/
-│   └── test_users.json     # Data-Driven Testing (DDT) payloads
+│   ├── user_login.json         # Negative login scenarios (DDT)
+│   └── test_users.json         # Negative sign-up scenarios (DDT)
 ├── pages/
-│   ├── base_page.py        # Core UI interactions and Playwright wrappers
-│   ├── home_page.py        # Page Object definitions
-│   └── login_page.py       
+│   ├── base_page.py            # Core UI interactions and Playwright wrappers
+│   ├── home_page.py            # Home / feed page object
+│   ├── sign_in_page.py         # Login page object
+│   ├── sign_up_page.py         # Registration page object
+│   ├── article_page.py         # Article detail page object
+│   ├── editor_page.py          # Article editor page object
+│   ├── profile_page.py         # User profile page object
+│   └── settings_page.py        # User settings page object
 ├── tests/
-│   ├── conftest.py         # Global Pytest fixtures (Auth setup, State Injection)
-│   └── test_feed.py        # Executable test scripts
+│   ├── test_home.py            # Home page smoke tests
+│   ├── test_feed.py            # Global feed, personal feed, tag filtering
+│   ├── test_auth.py            # Sign-in & sign-up (happy path + negative DDT)
+│   ├── test_articles.py        # Article CRUD, comments, favourites
+│   ├── test_settings.py        # Settings update & logout
+│   └── test_profile.py         # Profile page & tab navigation
 ├── utils/
-├── .gitignore              # Ignores local auth state (playwright/.auth/)
-├── pytest.ini              # Pytest config (base_url, default CLI flags)
-├── requirements.txt        # Python dependencies
-└── README.md               # Framework documentation
+│   ├── api_client.py           # APIClient helper for test setup/teardown
+│   └── file_load.py            # JSON data loader utility
+├── conftest.py                 # Global Pytest fixtures (Auth setup, State Injection, API fixtures)
+├── .gitignore                  # Ignores local auth state (playwright/.auth/)
+├── pytest.ini                  # Pytest config (base_url, default CLI flags)
+├── requirements.txt            # Python dependencies
+└── README.md                   # Framework documentation
+```

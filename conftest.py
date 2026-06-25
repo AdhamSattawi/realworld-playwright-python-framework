@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from playwright.sync_api import Browser, BrowserContext, Page, expect, APIRequestContext, Playwright, Route, Request
 from faker import Faker
+from utils.api_client import APIClient
 
 # Get the project root directory (where conftest.py is located)
 PROJECT_ROOT = Path(__file__).parent
@@ -131,3 +132,38 @@ def create_test_user(api_client: APIRequestContext) -> dict:
     assert response.ok
     yield user_data["user"]
 
+
+@pytest.fixture
+def create_article(api_client: APIRequestContext, create_test_user: dict):
+    """Create an article via API before the test and delete it afterwards.
+
+    The fixture first logs in as the freshly-created test user to obtain a
+    JWT token, then creates an article.  After the test the article is
+    deleted via API (404 is tolerated in case the test deleted it via UI).
+
+    Yields a dict with keys: ``slug``, ``title``, ``token``.
+    """
+    client = APIClient(api_client)
+
+    # Obtain a token for the test user created by create_test_user
+    login_resp = client.login_user(
+        email=create_test_user["email"],
+        password=create_test_user["password"],
+    )
+    token = login_resp["user"]["token"]
+
+    fake = Faker()
+    title = fake.sentence(nb_words=4).rstrip(".")
+    article_resp = client.create_article(
+        token=token,
+        title=title,
+        description=fake.sentence(),
+        body=fake.paragraph(),
+        tag_list=["automation", "test"],
+    )
+    slug = article_resp["article"]["slug"]
+
+    yield {"slug": slug, "title": title, "token": token}
+
+    # Cleanup — tolerates 404 if the test already deleted it
+    client.delete_article(token=token, slug=slug)

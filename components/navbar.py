@@ -4,7 +4,7 @@ from playwright.sync_api import Page
 class NavBar:
     def __init__(self, page: Page) -> None:
         self.page = page
-        self.container = page.locator(".navbar navbar-light")
+        self.container = page.locator(".navbar.navbar-light")
         self.conduit = self.container.get_by_role("link", name="conduit", exact=True)
         self.home = self.container.get_by_role("link", name="Home")
         self.new_post = self.container.get_by_role("link", name="New Post")

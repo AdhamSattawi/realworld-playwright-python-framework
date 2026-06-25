@@ -1,0 +1,32 @@
+[
+  {
+    "scenario": "Duplicate Email",
+    "username": "uniqueuser123",
+    "email": "zpokerz10@hotmail.com",
+    "password": "ValidPassword123!"
+  },
+  {
+    "scenario": "Empty Username",
+    "username": "",
+    "email": "brandnew@example.com",
+    "password": "ValidPassword123!"
+  },
+  {
+    "scenario": "Empty Email",
+    "username": "someuser",
+    "email": "",
+    "password": "ValidPassword123!"
+  },
+  {
+    "scenario": "Empty Password",
+    "username": "someuser",
+    "email": "brandnew@example.com",
+    "password": ""
+  },
+  {
+    "scenario": "Empty All Fields",
+    "username": "",
+    "email": "",
+    "password": ""
+  }
+]
