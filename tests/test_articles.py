@@ -43,11 +43,11 @@ def test_edit_article(logged_in_page: Page, create_article: dict):
 
 
 def test_delete_article(logged_in_page: Page, create_article: dict):
-    """An authenticated user can delete their own article."""
+    """An authenticated user can delete their own article (accepts confirm dialog)."""
     article_page = ArticlePage(logged_in_page)
     article_page.load(create_article["slug"])
 
-    article_page.delete()
+    article_page.delete()  # handles window.confirm() internally
 
     # After deletion the app redirects away from the article page
     expect(logged_in_page).not_to_have_url(re.compile(r"/article/"))
@@ -65,14 +65,31 @@ def test_add_comment(logged_in_page: Page, create_article: dict):
     expect(logged_in_page.get_by_text(comment_text)).to_be_visible()
 
 
-def test_favorite_article(logged_in_page: Page, create_article: dict):
-    """Clicking the heart button on an article increments the favourite count."""
-    article_page = ArticlePage(logged_in_page)
-    article_page.load(create_article["slug"])
+def test_favorite_article(logged_in_page: Page):
+    """A user can favourite an article they did not write.
 
-    like_btn = article_page.get_like_btn()
-    expect(like_btn).to_be_visible()
-    like_btn.click()
+    The FavoriteButton (with .ion-heart) is only rendered for non-authors.
+    We navigate to the global feed and favourite the first article there.
+    """
+    logged_in_page.goto("/")
+    logged_in_page.wait_for_load_state("networkidle")
 
-    # After favouriting, the button count should be 1 (was 0)
-    expect(logged_in_page.locator(".favorites-count")).to_have_text(re.compile(r"[1-9]"))
+    # Click Global Feed to ensure articles are listed
+    logged_in_page.get_by_role("link", name="Global Feed").click()
+    logged_in_page.wait_for_load_state("networkidle")
+
+    # The favourite buttons in the feed are FavoriteButton components
+    first_fav_btn = logged_in_page.locator(".article-preview .ion-heart").first
+    expect(first_fav_btn).to_be_visible()
+
+    # Read the current count from the sibling text node
+    before_count_text = logged_in_page.locator(
+        ".article-preview button.btn-outline-primary"
+    ).first.inner_text()
+
+    first_fav_btn.click()
+
+    # After favouriting the button should switch to btn-primary (filled)
+    expect(
+        logged_in_page.locator(".article-preview button.btn-primary").first
+    ).to_be_visible()

@@ -4,7 +4,8 @@ from pages.base_page import BasePage
 class ProfilePage(BasePage):
     def __init__(self, page: Page) -> None:
         super().__init__(page)
-        self.edit_profile_btn = page.get_by_role("button", name="Edit Profile Settings")
+        # "Edit Profile Settings" is a Next.js <Link> (renders as <a>), not a <button>
+        self.edit_profile_btn = page.get_by_role("link", name="Edit Profile Settings")
         self.my_articles = page.get_by_role("link", name="My Articles")
         self.fav_articles = page.get_by_role("link", name="Favorited Articles")
 
