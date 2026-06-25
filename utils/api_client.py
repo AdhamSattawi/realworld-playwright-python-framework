@@ -8,6 +8,16 @@ class APIClient:
     def __init__(self, request: APIRequestContext) -> None:
         self._request = request
 
+    def _auth_headers(self, token: str | None) -> dict:
+        """Return an Authorization header dict, or empty dict if no token given.
+
+        When using cookie-based auth (NextAuth), pass token=None and set the
+        Cookie header on the APIRequestContext itself instead.
+        """
+        if token:
+            return {"Authorization": f"Token {token}"}
+        return {}
+
     # ------------------------------------------------------------------
     # Users
     # ------------------------------------------------------------------
@@ -36,16 +46,19 @@ class APIClient:
 
     def create_article(
         self,
-        token: str,
         title: str,
         description: str,
         body: str,
         tag_list: list[str] | None = None,
+        token: str | None = None,
     ) -> dict:
-        """Create an article as an authenticated user. Returns the response JSON."""
+        """Create an article. Pass token for JWT auth, or rely on cookie header
+        set on the underlying APIRequestContext for session-based auth.
+        Returns the response JSON.
+        """
         response = self._request.post(
             "/api/articles",
-            headers={"Authorization": f"Token {token}"},
+            headers=self._auth_headers(token),
             data={
                 "article": {
                     "title": title,
@@ -55,16 +68,18 @@ class APIClient:
                 }
             },
         )
-        assert response.ok, f"create_article failed: {response.text()}"
+        assert response.ok, f"create_article failed ({response.status}): {response.text()}"
         return response.json()
 
-    def delete_article(self, token: str, slug: str) -> None:
-        """Delete an article by slug as an authenticated user."""
+    def delete_article(self, slug: str, token: str | None = None) -> None:
+        """Delete an article by slug. Pass token for JWT auth, or rely on cookie
+        header set on the underlying APIRequestContext for session-based auth.
+        404 is tolerated — the test may have already deleted it via UI.
+        """
         response = self._request.delete(
             f"/api/articles/{slug}",
-            headers={"Authorization": f"Token {token}"},
+            headers=self._auth_headers(token),
         )
-        # 404 is acceptable — the test may have already deleted it via UI
         assert response.ok or response.status == 404, (
             f"delete_article failed with status {response.status}: {response.text()}"
         )

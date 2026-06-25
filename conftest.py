@@ -134,28 +134,36 @@ def create_test_user(api_client: APIRequestContext) -> dict:
 
 
 @pytest.fixture
-def create_article(api_client: APIRequestContext, create_test_user: dict):
+def create_article(playwright: Playwright, base_url: str, setup_auth):
     """Create an article via API before the test and delete it afterwards.
 
-    The fixture first logs in as the freshly-created test user to obtain a
-    JWT token, then creates an article.  After the test the article is
-    deleted via API (404 is tolerated in case the test deleted it via UI).
+    Uses the session cookies saved by ``setup_auth`` (NextAuth does not expose
+    a REST login endpoint that returns a JWT, so we piggyback on the stored
+    browser state instead).
 
-    Yields a dict with keys: ``slug``, ``title``, ``token``.
+    Yields a dict with keys: ``slug``, ``title``.
     """
-    client = APIClient(api_client)
+    import json as _json
 
-    # Obtain a token for the test user created by create_test_user
-    login_resp = client.login_user(
-        email=create_test_user["email"],
-        password=create_test_user["password"],
+    # Load the saved NextAuth session cookies from the auth file
+    with open(AUTH_FILE) as f:
+        storage = _json.load(f)
+    cookies = {
+        c["name"]: c["value"]
+        for c in storage.get("cookies", [])
+    }
+    cookie_header = "; ".join(f"{k}={v}" for k, v in cookies.items())
+
+    request_context = playwright.request.new_context(
+        base_url=base_url,
+        extra_http_headers={"Cookie": cookie_header},
     )
-    token = login_resp["user"]["token"]
+    client = APIClient(request_context)
 
     fake = Faker()
     title = fake.sentence(nb_words=4).rstrip(".")
     article_resp = client.create_article(
-        token=token,
+        token=None,  # auth via cookie header, not Bearer token
         title=title,
         description=fake.sentence(),
         body=fake.paragraph(),
@@ -163,7 +171,8 @@ def create_article(api_client: APIRequestContext, create_test_user: dict):
     )
     slug = article_resp["article"]["slug"]
 
-    yield {"slug": slug, "title": title, "token": token}
+    yield {"slug": slug, "title": title}
 
-    # Cleanup — tolerates 404 if the test already deleted it
-    client.delete_article(token=token, slug=slug)
+    # Cleanup — tolerates 404 if the test already deleted it via UI
+    client.delete_article(token=None, slug=slug)
+    request_context.dispose()

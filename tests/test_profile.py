@@ -22,10 +22,19 @@ def test_edit_profile_button_navigates_to_settings(logged_in_page: Page, create_
     expect(settings.header).to_be_visible()
 
 
-def test_my_articles_tab(logged_in_page: Page, create_test_user: dict, create_article: dict):
-    """The 'My Articles' tab on the profile page should list the user's articles."""
+def test_my_articles_tab(logged_in_page: Page, create_article: dict):
+    """The 'My Articles' tab on the auth user's profile should list their articles."""
+    # Navigate to settings to read the current logged-in username from the URL
+    logged_in_page.goto("/settings")
+    logged_in_page.wait_for_load_state("networkidle")
+    # The profile link in the navbar contains the username
+    username_link = logged_in_page.locator(".navbar a[href*='/profile/@']").first
+    href = username_link.get_attribute("href")
+    # href is like /profile/@zpokerz10 — extract the username
+    username = href.split("@")[-1].rstrip("/")
+
     profile = ProfilePage(logged_in_page)
-    profile.load(create_test_user["username"])
+    profile.load(username)
     profile.goto_my_articles()
 
     # The article created by the fixture should appear in the list
